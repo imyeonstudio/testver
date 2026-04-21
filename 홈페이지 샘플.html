@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>도와줘 청소 대장</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.19/bundled/lenis.min.js"></script>
+    <style>
+        /* 기본 설정 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        body {
+            color: #333;
+            overflow-x: hidden;
+            background-color: #fff;
+            /* 한글 단어 단위 줄바꿈 유지 (글자 쪼개짐 방지) */
+            word-break: keep-all; 
+        }
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+        li {
+            list-style: none;
+        }
+
+        /* 헤더 */
+        header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 5%;
+            background: rgba(0,0,0,0.4);
+            z-index: 10;
+        }
+        .logo {
+            color: #1a73e8;
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: -1px;
+        }
+        .logo span { color: #fff; font-size: 12px; display: block; text-align: center; font-weight: normal; margin-top:-5px;}
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            color: #fff;
+            font-weight: 500;
+        }
+
+        /* 플로팅 버튼 */
+        .floating-btns {
+            position: fixed;
+            right: 20px;
+            bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+        .floating-btns a {
+            padding: 12px 20px;
+            border-radius: 30px;
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .floating-btns a:hover { transform: translateY(-3px); }
+        .btn-red { background-color: #ff4757; border: 2px solid #ff6b81; }
+        .btn-blue1 { background-color: #1e90ff; border: 2px solid #70a1ff;}
+        .btn-blue2 { background-color: #00a8ff; border: 2px solid #48dbfb;}
+
+        /* 섹션 1: 메인 배너 (dvh 최적화) */
+        .hero {
+            position: relative;
+            /* 브라우저 UI를 제외한 실제 화면 높이에 맞춤 */
+            height: 100dvh; 
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-left: 10%;
+            color: white;
+            overflow: hidden;
+            background-color: #000;
+        }
+        .hero-bg-img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://img.kr.gcp-karroter.net/local_business_ugc/local_business_ugc/undefined/27971406/1775827864943/UmVzaXplZF8yMDI2MDQxMF8yMjA0MzVfQklNRVBCSEhGSUNHSUNIREFEVFpaSUhBSEYuanBlZw==.jpeg?s=1440x1440&q=95&t=inside') center/cover no-repeat;
+            z-index: 0;
+        }
+        .hero::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1;
+        }
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .hero-content.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 900;
+            line-height: 1.4;
+            margin-bottom: 30px;
+        }
+        .hero h1 span { color: #00a8ff; }
+        .hero-btn {
+            display: inline-block;
+            border: 1px solid #fff;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            width: fit-content;
+            transition: all 0.3s;
+        }
+        .hero-btn:hover { background: #fff; color: #000; }
+
+        /* 공통 스크롤 애니메이션 클래스 */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 0.8s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 섹션 2: 투명성 */
+        .transparency {
+            padding: 120px 10%;
+            text-align: center;
+            background-color: #fff;
+            overflow: hidden; 
+        }
+        
+        .transparency-header-wrap { margin-bottom: 50px; }
+        .slide-right, .slide-left {
+            opacity: 0;
+            transition: all 0.8s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .slide-right {
+            font-size: 60px; color: #82ccdd; font-weight: 900; margin-bottom: 10px;
+            transform: translateX(-150px);
+        }
+        .slide-left {
+            font-size: 60px; color: #1e90ff; font-weight: 900;
+            transform: translateX(150px);
+        }
+        .slide-right.active, .slide-left.active {
+            opacity: 1; transform: translateX(0);
+        }
+        
+        .transparency-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 60px;
+            margin-top: 50px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .media-box {
+            width: 450px;
+            height: 550px;
+            border-radius: 20px;
+            background-position: center;
+            background-size: cover;
+            position: relative;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            transition: background-image 0.5s ease-in-out;
+            overflow: hidden;
+        }
+        .media-box::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 50%);
+        }
+        .media-text {
+            position: absolute; bottom: 30px; left: 30px; color: #fff;
+            font-weight: 800; font-size: 28px; text-align: left;
+            line-height: 1.4; z-index: 1; transition: opacity 0.3s;
+        }
+        .accordion {
+            text-align: left;
+            width: 400px;
+        }
+        .accordion h4 { font-size: 28px; margin-bottom: 5px; color: #000;}
+        .accordion p { color: #555; margin-bottom: 30px; font-size: 16px; }
+        .acc-item {
+            border: 1px solid #e0e0e0; padding: 20px; margin-bottom: 15px;
+            border-radius: 8px; display: flex; justify-content: space-between;
+            align-items: center; font-weight: bold; color: #555;
+            cursor: pointer; transition: all 0.3s ease; background: #fff;
+        }
+        .acc-item.active {
+            border-color: #1e90ff; color: #1e90ff;
+            box-shadow: 0 5px 15px rgba(30, 144, 255, 0.15);
+            transform: translateX(-5px);
+        }
+        .acc-item:hover { border-color: #1e90ff; }
+        .acc-item span:last-child { font-size: 12px; }
+
+        /* 섹션 3: 리뷰 */
+        .reviews {
+            padding: 100px 0;
+            background-color: #f9f9f9;
+            text-align: center;
+            overflow: hidden;
+        }
+        .reviews h4 { color: #666; font-size: 16px; margin-bottom: 10px; font-weight: bold;}
+        .reviews h2 { font-size: 36px; margin-bottom: 50px; font-weight: 800; }
+        
+        .marquee-container {
+            display: flex; overflow: hidden; user-select: none;
+        }
+        .marquee-content {
+            flex-shrink: 0; display: flex; gap: 20px; padding-right: 20px;
+            width: max-content; animation: scroll 35s linear infinite;
+        }
+        .marquee-container:hover .marquee-content { animation-play-state: paused; }
+        
+        @keyframes scroll {
+            from { transform: translateX(0); }
+            to { transform: translateX(-100%); }
+        }
+
+        .review-card {
+            width: 320px; background: #fff; border-radius: 12px;
+            padding: 25px; text-align: left; box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            flex-shrink: 0;
+        }
+        .review-card img { width: 100%; height: 160px; object-fit: cover; border-radius: 8px; margin-bottom: 15px; }
+        .review-card .stars { color: #ff9f43; margin-bottom: 10px; font-size: 18px; letter-spacing: 2px;}
+        .review-card p { font-size: 14px; color: #444; line-height: 1.6; word-break: keep-all; }
+        .review-header { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+        .review-header .avatar { width: 40px; height: 40px; background: #eee; border-radius: 50%; }
+        .review-header .name { font-weight: bold; font-size: 14px; }
+        .review-header .date { font-size: 12px; color: #888; }
+
+        /* 신규 섹션: 서비스 종류 */
+        .services {
+            padding: 100px 10%; background-color: #fff; text-align: center;
+        }
+        .services h4 { font-size: 16px; color: #666; margin-bottom: 10px; font-weight: bold; text-align: left;}
+        .services h2 { font-size: 40px; font-weight: 900; margin-bottom: 50px; text-align: left;}
+        .services-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+        }
+        .service-card {
+            background: #f4f5f7; border-radius: 15px; padding: 40px 25px;
+            text-align: left; display: flex; flex-direction: column;
+        }
+        .service-card h3 { font-size: 24px; font-weight: 800; margin-bottom: 10px;}
+        .service-card .desc { font-size: 14px; color: #666; margin-bottom: 30px; line-height: 1.5; min-height: 42px;}
+        .service-card ul { margin-bottom: 40px; flex-grow: 1;}
+        .service-card li { font-size: 14px; color: #444; margin-bottom: 15px; display: flex; align-items: flex-start; gap: 10px;}
+        .service-card li::before { content: '✓'; color: #1e90ff; font-weight: bold; }
+        .service-card .btn-apply {
+            display: block; width: 100%; padding: 15px 0; text-align: center;
+            border: 1px solid #1e90ff; color: #1e90ff; border-radius: 8px;
+            font-weight: bold; transition: all 0.3s;
+        }
+        .service-card .btn-apply:hover { background: #1e90ff; color: #fff; }
+
+        /* 섹션 4: 청소 방식 */
+        .process {
+            padding: 100px 10%; display: flex; align-items: center;
+            justify-content: space-between; background-color: #f9f9f9;
+        }
+        .process-text { width: 45%; }
+        .process-text h4 { font-size: 16px; color: #666; margin-bottom: 15px; font-weight: bold;}
+        .process-text h2 { font-size: 40px; font-weight: 900; line-height: 1.3; margin-bottom: 40px; }
+        .process-text h3 { font-size: 24px; font-weight: bold; margin-bottom: 15px; display: inline-block; box-shadow: inset 0 -10px 0 rgba(30, 144, 255, 0.2);}
+        .process-text p { font-size: 18px; color: #555; line-height: 1.6; }
+        .process-img {
+            width: 50%; border-radius: 20px; overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .process-img img { width: 100%; display: block; object-fit: cover; }
+
+        /* 섹션 5: 하단 배너 */
+        .bottom-banner {
+            height: 400px;
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.pexels.com/photos/4099467/pexels-photo-4099467.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2') center/cover fixed;
+            display: flex; flex-direction: column; justify-content: center;
+            align-items: center; color: white; text-align: center; padding: 0 5%;
+        }
+        .bottom-banner p { font-size: 18px; margin-bottom: 15px; font-weight: 500;}
+        .bottom-banner h2 { font-size: 40px; font-weight: 800; line-height: 1.4; }
+
+        /* 푸터 */
+        footer { padding: 60px 0; text-align: center; background-color: #fff; }
+        footer .logo { font-size: 48px; color: #1a73e8; }
+
+        /* =========================================
+           📱 모바일 반응형 (Mobile Optimization) 
+           ========================================= */
+        @media (max-width: 768px) {
+            /* 1. 헤더 간소화 */
+            header { padding: 0 20px; height: 60px; }
+            .logo { font-size: 18px; }
+            .logo span { font-size: 10px; }
+            .nav-links { display: none; } /* 모바일에서는 네비게이션 숨김 (깔끔함 유지) */
+
+            /* 2. 메인 배너 (글자 크기 및 중앙 정렬) */
+            .hero { padding: 0 20px; align-items: center; text-align: center; }
+            .hero h1 { font-size: 32px; margin-bottom: 20px; }
+            .hero-content { display: flex; flex-direction: column; align-items: center;}
+
+            /* 3. 공통 여백 축소 */
+            .transparency, .services, .process, .reviews { padding: 70px 20px; }
+
+            /* 4. 모두 공개할게요 섹션 (세로 배치로 변경) */
+            .slide-right, .slide-left { font-size: 36px; }
+            .transparency-content { flex-direction: column; gap: 30px; margin-top: 30px; }
+            .media-box { width: 100%; height: 350px; }
+            .media-text { font-size: 20px; bottom: 20px; left: 20px; }
+            .accordion { width: 100%; }
+            .accordion h4 { font-size: 24px; }
+
+            /* 5. 서비스 종류 섹션 (4단 -> 1단 세로 배치) - 스크린샷 2번 문제 해결 */
+            .services h2 { font-size: 32px; margin-bottom: 30px; }
+            .services-grid { grid-template-columns: 1fr; gap: 15px; } /* 1줄로 변경 */
+            .service-card { padding: 30px 20px; }
+            .service-card .desc { min-height: auto; }
+
+            /* 6. 청소 방식 섹션 (좌우 -> 상하 세로 배치) - 스크린샷 4번 문제 해결 */
+            .process { flex-direction: column; text-align: left; }
+            .process-text { width: 100%; margin-bottom: 40px; }
+            .process-text h2 { font-size: 32px; margin-bottom: 25px; }
+            .process-text h3 { font-size: 20px; }
+            .process-text p { font-size: 16px; }
+            .process-img { width: 100%; }
+
+            /* 7. 하단 배너 글자 크기 조정 */
+            .bottom-banner h2 { font-size: 26px; }
+            .bottom-banner p { font-size: 15px; }
+            footer .logo { font-size: 32px; }
+
+            /* 8. 플로팅 버튼 축소 (화면을 덜 가리도록) */
+            .floating-btns {
+                right: 15px; 
+                bottom: 15px;
+                transform: scale(0.85); /* 전체 크기를 85%로 축소 */
+                transform-origin: bottom right;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            도와줘 청소 대장
+            <span>입주청소</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#">저희는요</a></li>
+            <li><a href="#">청소범위</a></li>
+            <li><a href="#">자주 묻는 질문</a></li>
+        </ul>
+    </header>
+
+    <div class="floating-btns">
+        <a href="#" class="btn-blue1">💬 빠른 채팅 상담</a>
+        <a href="#" class="btn-blue2">📞 직통 전화 상담</a>
+    </div>
+
+    <section class="hero">
+        <div class="hero-bg-img"></div>
+        <div class="hero-content" id="heroContent">
+            <h1>
+                <span>"속도"</span>보다 <span>"품질"</span>을 원하신다면,<br>
+                정확히 찾아오셨어요.
+            </h1>
+            <a href="#section-transparency" class="hero-btn">청소대장 실력 보러가기 →</a>
+        </div>
+    </section>
+
+    <section id="section-transparency" class="transparency">
+        <div class="transparency-header-wrap">
+            <h3 class="slide-right">모두 공개할게요</h3>
+            <h2 class="slide-left">우리가 어떻게 청소하는지</h2>
+        </div>
+        
+        <div class="transparency-content reveal">
+            <div class="media-box" id="mediaBox">
+                <div class="media-text" id="mediaText">물때와 니코틴에 쩌든집</div>
+            </div>
+            <div class="accordion">
+                <h4>자신감의 근원은 '투명성'</h4>
+                <p>실제 작업물 공개 <br><small style="color:#aaa;"></small></p>
+                
+                <div class="acc-item active" data-index="0">
+                    <span>물때와 니코틴에 쩌든집</span>
+                    <span>▶</span>
+                </div>
+                <div class="acc-item" data-index="1">
+                    <span>43평 인테리어 현장</span>
+                    <span>▶</span>
+                </div>
+                <div class="acc-item" data-index="2">
+                    <span>곰팡이 제거 시공</span>
+                    <span>▶</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="reviews reveal">
+        <h4>당근마켓 100% 실제 리뷰</h4>
+        <h2>이웃들이 남긴 후기를 확인해보세요.</h2>
+        
+        <div class="marquee-container">
+            <div class="marquee-content">
+                <div class="review-card">
+                    <div class="review-header">
+                        <div class="avatar"></div>
+                        <div><div class="name">은백의신</div><div class="date">관양동 인증 10회</div></div>
+                    </div>
+                    <img src="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=600&auto=format&fit=crop" alt="review">
+                    <div class="stars">★★★★★</div>
+                    <p>지난번에 청소를 했던 벽산아파트 이모님께 추천을 받아서 연락을 드렸어요~!! 하도 칭찬도 하시고~ 너무 만족하셨다고 하기에 의심 없이 믿고 진행하게 되었어요^^ 기대 이상으로 너무 깨끗해서 만족했습니다!</p>
+                </div>
+                <div class="review-card">
+                    <div class="review-header">
+                        <div class="avatar"></div>
+                        <div><div class="name">당근마켓매니아</div><div class="date">호계동 인증 24회</div></div>
+                    </div>
+                    <img src="https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?q=80&w=600&auto=format&fit=crop" alt="review">
+                    <div class="stars">★★★★★</div>
+                    <p>제가 원래 진짜 리뷰 잘 안 쓰는데... 너무 감사해서... 도저히 안 쓸 수가 없게 만드시네요. 감동입니다. 처음에는 아무것도 모르고 이사했다가 너무 놀랐어요. 더러운 곳을 완벽하게 탈바꿈해주셨습니다.</p>
+                </div>
+                <div class="review-card">
+                    <div class="review-header">
+                        <div class="avatar"></div>
+                        <div><div class="name">초코버섯</div><div class="date">평촌동 인증 15회</div></div>
+                    </div>
+                    <img src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=600&auto=format&fit=crop" alt="review">
+                    <div class="stars">★★★★★</div>
+                    <p>이번에 이사를 가기로 한 곳이 전 세입자분께서 6~7년 정도 살던 곳이어서 걱정이 많았는데 완벽하게 해결해주셨습니다. 중간중간 사진도 보내주셔서 믿음직스러웠습니다.</p>
+                </div>
+                <div class="review-card">
+                    <div class="review-header">
+                        <div class="avatar"></div>
+                        <div><div class="name">알로수현</div><div class="date">안양동 인증 32회</div></div>
+                    </div>
+                    <img src="https://images.unsplash.com/photo-1628177142898-93e46e46248d?q=80&w=600&auto=format&fit=crop" alt="review">
+                    <div class="stars">★★★★★</div>
+                    <p>아기가 있어서 새집증후군 때문에 걱정이 많았습니다. 피톤치드 시공까지 깔끔하게 마무리해주셨어요. 처음에는 신축 특유의 냄새때문에 머리가 많이 아팠는데 냄새도 다 제거해주셨어요.</p>
+                </div>
+                <div class="review-card">
+                    <div class="review-header">
+                        <div class="avatar"></div>
+                        <div><div class="name">밀알</div><div class="date">비산동 인증 8회</div></div>
+                    </div>
+                    <img src="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=600&auto=format&fit=crop" alt="review">
+                    <div class="stars">★★★★★</div>
+                    <p>사실 전날까지도 걱정 많았는데 그냥 믿고 맡기길 잘했네요. 화장실 줄눈이랑 다 깨끗해졌어요. 저희 집처럼 지저분하고 답없는 곳을 이렇게 변신시켜주시다니 정말 감사합니다.</p>
+                </div>
+            </div>
+            <div class="marquee-content" aria-hidden="true">
+                <div class="review-card">
+                    <div class="review-header"><div class="avatar"></div><div><div class="name">은백의신</div><div class="date">관양동 인증 10회</div></div></div>
+                    <img src="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=600&auto=format&fit=crop" alt="review">
+                    <div class="stars">★★★★★</div>
+                    <p>지난번에 청소를 했던 벽산아파트 이모님께 추천을 받아서 연락을 드렸어요~!! 하도 칭찬도 하시고~ 너무 만족하셨다고 하기에 의심 없이 믿고 진행하게 되었어요^^ 기대 이상으로 너무 깨끗해서 만족했습니다!</p>
+                </div>
+                <div class="review-card">
+                    <div class="review-header"><div class="avatar"></div><div><div class="name">당근마켓매니아</div><div class="date">호계동 인증 24회</div></div></div>
+                    <img src="https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?q=80&w=600&auto=format&fit=crop" alt="review">
+                    <div class="stars">★★★★★</div>
+                    <p>제가 원래 진짜 리뷰 잘 안 쓰는데... 너무 감사해서... 도저히 안 쓸 수가 없게 만드시네요. 감동입니다. 처음에는 아무것도 모르고 이사했다가 너무 놀랐어요. 더러운 곳을 완벽하게 탈바꿈해주셨습니다.</p>
+                </div>
+                <div class="review-card">
+                    <div class="review-header"><div class="avatar"></div><div><div class="name">초코버섯</div><div class="date">평촌동 인증 15회</div></div></div>
+                    <img src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=600&auto=format&fit=crop" alt="review">
+                    <div class="stars">★★★★★</div>
+                    <p>이번에 이사를 가기로 한 곳이 전 세입자분께서 6~7년 정도 살던 곳이어서 걱정이 많았는데 완벽하게 해결해주셨습니다. 중간중간 사진도 보내주셔서 믿음직스러웠습니다.</p>
+                </div>
+                <div class="review-card">
+                    <div class="review-header"><div class="avatar"></div><div><div class="name">알로수현</div><div class="date">안양동 인증 32회</div></div></div>
+                    <img src="https://images.unsplash.com/photo-1628177142898-93e46e46248d?q=80&w=600&auto=format&fit=crop" alt="review">
+                    <div class="stars">★★★★★</div>
+                    <p>아기가 있어서 새집증후군 때문에 걱정이 많았습니다. 피톤치드 시공까지 깔끔하게 마무리해주셨어요. 처음에는 신축 특유의 냄새때문에 머리가 많이 아팠는데 냄새도 다 제거해주셨어요.</p>
+                </div>
+                <div class="review-card">
+                    <div class="review-header"><div class="avatar"></div><div><div class="name">밀알</div><div class="date">비산동 인증 8회</div></div></div>
+                    <img src="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=600&auto=format&fit=crop" alt="review">
+                    <div class="stars">★★★★★</div>
+                    <p>사실 전날까지도 걱정 많았는데 그냥 믿고 맡기길 잘했네요. 화장실 줄눈이랑 다 깨끗해졌어요. 저희 집처럼 지저분하고 답없는 곳을 이렇게 변신시켜주시다니 정말 감사합니다.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="services reveal">
+        <h4>서비스 둘러보기</h4>
+        <h2>우리는 어떤 서비스가 있냐면요</h2>
+        <div class="services-grid">
+            <div class="service-card">
+                <h3>입주청소/이사청소</h3>
+                <p class="desc">새 집에 입주하기 전 먼지, 시멘트 가루 등 청소하거나<br>오염된 생활 흔적을 깨끗하게 청소해요</p>
+                <ul>
+                    <li>전체적인 분진 제거 작업해요</li>
+                    <li>기존 거주자의 먼지 흔적을 제거해요</li>
+                    <li>외창 제외 모든 범위가 청소 범위에요</li>
+                </ul>
+                <a href="#" class="btn-apply">신청하기</a>
+            </div>
+            <div class="service-card">
+                <h3>부분청소</h3>
+                <p class="desc">공간별 맞춤 장비와 세제로 생활 흔적을 지워요</p>
+                <ul>
+                    <li>원하는 구역만 집중적으로 선택해서 청소해요</li>
+                    <li>주방 기름때, 욕실 물때 등 필요한 곳만 골라보세요</li>
+                    <li>전체 청소가 부담스러울 때 합리적으로 이용해요</li>
+                </ul>
+                <a href="#" class="btn-apply">신청하기</a>
+            </div>
+            <div class="service-card">
+                <h3>거주청소</h3>
+                <p class="desc">사람이 거주중인 상태에서 진행하는 청소해요<br>[ 부분 청소도 가능해요 ]</p>
+                <ul>
+                    <li>집안에 있는 짐을 그대로 둔채 진행해요</li>
+                    <li>전체적인 대청소를 진행해요</li>
+                    <li>외창 제외 모든 범위가 청소 범위에요</li>
+                </ul>
+                <a href="#" class="btn-apply">신청하기</a>
+            </div>
+            <div class="service-card">
+                <h3>퇴실청소</h3>
+                <p class="desc">떠난 자리에 남은 흔적을 지우고 새로운 시작을 준비해요</p>
+                <ul>
+                    <li>전 거주자의 생활 먼지와 찌든 때를 완벽하게 제거해요</li>
+                    <li>욕실, 주방, 베란다 등 공간별 맞춤 클리닝을 진행해요</li>
+                    <li>검수 후 즉시 입주가 가능한 컨디션으로 복원해 드려요</li>
+                </ul>
+                <a href="#" class="btn-apply">신청하기</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="process reveal">
+        <div class="process-text">
+            <h4>우리 서비스를 꼼꼼하게 확인해주세요</h4>
+            <h2>우리는,<br>이렇게 청소하고 있어요.</h2>
+            <h3>우리는 들어가자마자 청소하지 않아요.</h3>
+            <p style="margin-top: 15px;">보이지 않는 먼지까지 찾아내기 위해<br>하나하나 탈거하는 작업부터 진행하고 있어요.</p>
+        </div>
+        <div class="process-img">
+            <img src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=1000&auto=format&fit=crop" alt="Cleaning Process">
+        </div>
+    </section>
+
+    <section class="bottom-banner reveal">
+        <p>꼭 우리가 아니어도 괜찮아요.</p>
+        <h2>천천히 비교해보고,<br>가족에게 가장 따뜻한 선택을 해주세요.</h2>
+    </section>
+
+    <footer>
+        <div class="logo" style="font-weight: 900;">
+            도와줘 청소 대장<br>
+            <span style="font-size: 16px; color: #1a73e8; letter-spacing: 10px; display: block; margin-top: 10px; font-weight: normal;">SOLUTION</span>
+        </div>
+    </footer>
+
+    <script>
+        // 1. Lenis 스무스 스크롤 유지
+        const lenis = new Lenis({
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), 
+            smooth: true,
+        });
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
+
+        // 2. 메인 히어로 애니메이션 유지
+        window.addEventListener('load', function() {
+            const heroContent = document.getElementById('heroContent');
+            setTimeout(() => {
+                heroContent.classList.add('active');
+            }, 50); 
+        });
+
+        // 3. 스크롤 등장 애니메이션 유지
+        function reveal() {
+            const reveals = document.querySelectorAll(".reveal");
+            for (let i = 0; i < reveals.length; i++) {
+                const windowHeight = window.innerHeight;
+                const elementTop = reveals[i].getBoundingClientRect().top;
+                const elementVisible = 150;
+                if (elementTop < windowHeight - elementVisible) {
+                    reveals[i].classList.add("active");
+                }
+            }
+        }
+        window.addEventListener("scroll", reveal);
+        reveal(); 
+
+        // 4. 섹션 2 텍스트 좌우 양방향 애니메이션
+        const textObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                } else {
+                    entry.target.classList.remove('active');
+                }
+            });
+        }, { threshold: 0.1 }); 
+
+        document.querySelectorAll('.slide-right, .slide-left').forEach(el => textObserver.observe(el));
+
+        // 5. 탭 슬라이드 기능 및 이미지 통합 제어
+        const tabData = [
+            {
+                text: "물때와 니코틴에 찌든 집",
+                img: "https://res.cloudinary.com/duxrmfdh5/image/upload/v1776754550/IMG_7881_o7eqcq.png"
+            },
+            {
+                text: "43평 인테리어 현장",
+                img: "https://res.cloudinary.com/duxrmfdh5/image/upload/v1776754887/IMG_7882_mor9kn.png"
+            },
+            {
+                text: "곰팡이 제거 시공",
+                img: "https://res.cloudinary.com/duxrmfdh5/image/upload/v1776755001/IMG_7883_brnsba.png"
+            }
+        ];
+
+        const tabs = document.querySelectorAll('.acc-item');
+        const mediaBox = document.getElementById('mediaBox');
+        const mediaText = document.getElementById('mediaText');
+        let currentTabIndex = 0;
+        let tabInterval;
+
+        // 초기 로딩 이미지 세팅
+        mediaBox.style.backgroundImage = `url('${tabData[0].img}')`;
+
+        function updateTab(index) {
+            tabs.forEach(tab => tab.classList.remove('active'));
+            tabs[index].classList.add('active');
+            
+            mediaText.style.opacity = 0;
+            setTimeout(() => {
+                mediaBox.style.backgroundImage = `url('${tabData[index].img}')`;
+                mediaText.innerHTML = tabData[index].text;
+                mediaText.style.opacity = 1;
+            }, 300);
+
+            currentTabIndex = index;
+        }
+
+        function startTabAutoPlay() {
+            tabInterval = setInterval(() => {
+                let nextIndex = (currentTabIndex + 1) % tabs.length;
+                updateTab(nextIndex);
+            }, 3500); 
+        }
+
+        tabs.forEach((tab, index) => {
+            tab.addEventListener('click', () => {
+                clearInterval(tabInterval); 
+                updateTab(index);
+                startTabAutoPlay(); 
+            });
+        });
+
+        startTabAutoPlay();
+    </script>
+</body>
+</html>
